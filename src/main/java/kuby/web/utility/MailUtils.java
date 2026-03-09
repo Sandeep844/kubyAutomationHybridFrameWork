@@ -56,14 +56,15 @@ public class MailUtils extends TestBase{
 			String subject, String body, String attachmentFilePath1, String attachmentFilePath2 ) {
         /* Setup mail server properties */
 		Properties props = new Properties();
-		props.put("mail.smtp.host", "smtp.office365.com");
+		//props.put("mail.smtp.host", "smtp.office365.com");
+		props.put("mail.smtp.host", "smtp.gmail.com");
 		props.put("mail.smtp.starttls.enable","true");
-		props.put("mail.smtp.socketFactory.fallback", "true");
+		//props.put("mail.smtp.socketFactory.fallback", "true");
 		/* Enabling SMTP Authentication */
 		props.put("mail.smtp.auth", "true");
 		props.put("mail.smtp.port", "587"); // SMTP Port
 //		props.put("mail.debug", "true");
-		props.put("mail.smtp.socketFactory.class", "javax.net.ssl.SSLSocketFactory");
+		//props.put("mail.smtp.socketFactory.class", "javax.net.ssl.SSLSocketFactory");
 
        /* Create a session with authentication */
 		Session session = Session.getInstance(props, new javax.mail.Authenticator() {

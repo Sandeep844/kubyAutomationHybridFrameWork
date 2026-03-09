@@ -28,7 +28,7 @@ public class KubyCompanionBookingTest extends TestBase {
         slotPage = new BookAComapnionSlotPage();
     }
 
-    @Test(priority=4)
+    @Test(priority = 1, description = "End-to-end test for companion booking - select slot")
     public void TC_Companion_EndToEnd_SelectSlot() {
         logg.info("Start: Companion booking end-to-end - select slot");
 
