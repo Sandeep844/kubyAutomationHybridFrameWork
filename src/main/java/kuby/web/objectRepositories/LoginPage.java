@@ -55,6 +55,9 @@ public class LoginPage extends TestBase {
 
 	@FindBy(xpath="//button[text()='Continue']")
 	private WebElement ContinueBtn;
+
+	@FindBy(xpath="//button[text()='Accept all']")
+	private WebElement acceptAllCookies;
 	
 	public LoginPage()
 	{
@@ -121,6 +124,7 @@ public String invalidemailErrorMsg()
 
 
 	public void clickOnLoginInButton() {
+		CommonUtilities.elementToBeClickable(logeInBtn,10);
 		logeInBtn.click();
 	}
 
@@ -130,9 +134,14 @@ public String invalidemailErrorMsg()
 	}
 	public void blankCreadencialEnterContinue()
 	{
+	CommonUtilities.elementToBeClickable(ContinueBtn,10);
 		ContinueBtn.click();
 
 
+	}
+	public void clickacceptAllCookiesbtn()
+	{
+		acceptAllCookies.click();
 	}
 	public void refreshBrowser() {
 		driver.navigate().refresh();
@@ -151,7 +160,13 @@ public void isOnHomePage()
 	        return false;	
 		}
 	}
-
+public void loginWIthAcceptAllCookies()
+{
+	clickacceptAllCookiesbtn();
+	valid_Credentials_login(prop.getProperty("loginUserEmail"), prop.getProperty("loginPassword"));
+	clickOnLoginInButton();
+	CommonUtilities.threadSleep(3000);
+}
 	
 }
 

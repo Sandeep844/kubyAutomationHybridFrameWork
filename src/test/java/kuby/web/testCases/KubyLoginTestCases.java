@@ -29,8 +29,12 @@ public class KubyLoginTestCases extends TestBase
     public void TC_01_Verify_that_the_User_is_not_able_to_log_in_with_a_blank_EmailId()
     {
         logg.info("========== TC_01: Verify User cannot login with blank EmailId ==========");
+//accept all cookies
+        CommonUtilities.threadSleep(1500);
 
+       loginpage.clickacceptAllCookiesbtn();
         // Enter blank email
+
         loginpage.blankCreadencialEnterContinue();
 
         logg.info("Clicked on Login Button without enterning email");

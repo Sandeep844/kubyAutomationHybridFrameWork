@@ -657,5 +657,6 @@ public class CommonUtilities extends TestBase{
 			System.out.println("Success highlight failed");
 		}
 	}
+
 }
 

@@ -1,17 +1,19 @@
 package kuby.web.objectRepositories;
 
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 
+
 import org.apache.log4j.Logger;
-import org.openqa.selenium.By;
-import org.openqa.selenium.NoSuchElementException;
-import org.openqa.selenium.WebElement;
+import org.openqa.selenium.*;
 import org.openqa.selenium.support.FindBy;
 import org.openqa.selenium.support.PageFactory;
 
 import kuby.web.testBase.TestBase;
 import kuby.web.utility.CommonUtilities;
+import org.openqa.selenium.support.ui.ExpectedConditions;
+import org.openqa.selenium.support.ui.WebDriverWait;
 
 public class CustomerCompanionPage extends TestBase {
 
@@ -53,7 +55,13 @@ public class CustomerCompanionPage extends TestBase {
         try {
             WebElement inp = CommonUtilities.elementToBeVisible(searchByNameInput, 10);
             CommonUtilities.sendkeys(inp, name);
-            CommonUtilities.threadSleep(1000);
+
+            CommonUtilities.threadSleep(2000);
+            inp.sendKeys(Keys.BACK_SPACE);
+            CommonUtilities.threadSleep(5000);
+            inp.sendKeys(Keys.ENTER);
+
+
         } catch (Exception e) {
             log.error("Failed to enter search text: " + e.getMessage());
             throw e;
@@ -79,47 +87,45 @@ public class CustomerCompanionPage extends TestBase {
         }
     }
 
-    public List<String> getAllCompanionNames() {
-        List<String> names = new ArrayList<>();
+
+    /**
+     * Wait for search results to load - IMPROVED
+     */
+    public void waitForSearchResults() {
         try {
-            if (companionCards != null) {
-                for (WebElement card : companionCards) {
-                    try {
-                        WebElement nameEl = card.findElement(By.xpath(".//h3"));
-                        names.add(nameEl.getText().trim());
-                    } catch (NoSuchElementException ne) {
-                        // fallback: try a heading inside card
-                        try {
-                            WebElement alt = card.findElement(By.xpath(".//h2|.//h4|.//p"));
-                            names.add(alt.getText().trim());
-                        } catch (Exception ex) {
-                            names.add("");
-                        }
-                    }
-                }
-            }
-        } catch (Exception e) {
-            log.error("Error while fetching companion names: " + e.getMessage());
+            WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(30));
+
+            // Wait for cards to be present
+            wait.until(ExpectedConditions.presenceOfAllElementsLocatedBy(
+                    By.xpath("//div[@data-slot='card']")
+            ));
+
+            log.info("Cards element found, waiting for visibility...");
+
+            // Additional wait - ensure cards are visible
+            Thread.sleep(1000);
+
+            // Wait for at least one h3 element (companion name) to be visible
+            wait.until(ExpectedConditions.visibilityOfAllElementsLocatedBy(
+                    By.xpath("//div[@data-slot='card']//h3")
+            ));
+
+            // Extra safety wait for animations to complete
+            Thread.sleep(1000);
+
+            log.info("Search results loaded successfully - all cards visible");
+
+        } catch (TimeoutException e) {
+            log.error("Search results did not load within timeout");
+            throw e;
+        } catch (InterruptedException e) {
+            log.error("Wait interrupted: " + e.getMessage());
+            Thread.currentThread().interrupt();
         }
-        return names;
     }
 
-    public boolean isCompanionPresent(String name) {
-        try {
-            for (WebElement card : companionCards) {
-                try {
-                    WebElement nameEl = card.findElement(By.xpath(".//h3"));
-                    if (nameEl.getText().trim().equalsIgnoreCase(name.trim()))
-                        return true;
-                } catch (Exception e) {
-                    // ignore
-                }
-            }
-        } catch (Exception e) {
-            log.error("Error checking companion presence: " + e.getMessage());
-        }
-        return false;
-    }
+
+
 
     public String getPriceForCompanion(String name) {
         try {
@@ -140,48 +146,6 @@ public class CustomerCompanionPage extends TestBase {
         return "";
     }
 
-    public void clickBookForCompanion(String name) {
-        try {
-            for (WebElement card : companionCards) {
-                try {
-                    WebElement nameEl = card.findElement(By.xpath(".//h3"));
-                    if (nameEl.getText().trim().equalsIgnoreCase(name.trim())) {
-                        WebElement bookBtn = card.findElement(By.xpath(".//button[contains(normalize-space(.),'Book your session') or contains(normalize-space(.),'Book session')]") );
-                        CommonUtilities.elementToBeClickable(bookBtn, 10).click();
-                        return;
-                    }
-                } catch (Exception e) {
-                    // continue search
-                }
-            }
-            throw new NoSuchElementException("Companion with name '" + name + "' not found to click Book");
-        } catch (Exception e) {
-            log.error("Error clicking Book for companion: " + e.getMessage());
-            throw e;
-        }
-    }
-
-    public void clickViewProfileOfCompanion(String name) {
-        try {
-            for (WebElement card : companionCards) {
-                try {
-                    WebElement nameEl = card.findElement(By.xpath(".//h3"));
-                    if (nameEl.getText().trim().equalsIgnoreCase(name.trim())) {
-                        WebElement profileLink = card.findElement(By.xpath(".//a[contains(@href,'/companions/') and .//h3]"));
-                        CommonUtilities.JSClick(profileLink);
-                        return;
-                    }
-                } catch (Exception e) {
-                    // continue
-                }
-            }
-            throw new NoSuchElementException("Companion with name '" + name + "' not found to click View Profile");
-        } catch (Exception e) {
-            log.error("Error clicking View Profile for companion: " + e.getMessage());
-            throw e;
-        }
-    }
-
     public void clickFirstCompanionBook() {
         try {
             if (companionCards != null && !companionCards.isEmpty()) {
@@ -197,28 +161,69 @@ public class CustomerCompanionPage extends TestBase {
         }
     }
 
-    public void clickBookForFirstMatching(String partialName) {
-        try {
-            if (companionCards == null || companionCards.isEmpty()) {
-                throw new NoSuchElementException("No companion cards found on page");
+
+    /**
+     * Get all companion names with their indices
+     */
+    public List<String> getAllCompanionNames() {
+        List<String> names = new ArrayList<>();
+        waitForSearchResults();
+
+        for (WebElement card : companionCards) {
+            try {
+                names.add(card.findElement(By.xpath(".//h3")).getText().trim());
+            } catch (Exception e) {
+                log.info("Name not found in card");
             }
-            for (WebElement card : companionCards) {
-                try {
-                    WebElement nameEl = card.findElement(By.xpath(".//h3"));
-                    if (nameEl.getText().toLowerCase().contains(partialName.toLowerCase())) {
-                        WebElement bookBtn = card.findElement(By.xpath(".//button[contains(normalize-space(.),'Book your session') or contains(normalize-space(.),'Book session')]") );
-                        CommonUtilities.elementToBeClickable(bookBtn, 10).click();
-                        return;
-                    }
-                } catch (Exception e) {
-                    // ignore and try next
-                }
-            }
-            throw new NoSuchElementException("No companion matching '" + partialName + "' found to click Book");
-        } catch (Exception e) {
-            log.error("Error in clickBookForFirstMatching: " + e.getMessage());
-            throw e;
         }
+
+        return names;
+    }
+
+
+    /**
+     * Find and click companion card by name - MOST STABLE
+     */
+    public boolean clickCompanionCardByName(String searchName) {
+        waitForSearchResults();
+
+        for (int i = 0; i < companionCards.size(); i++) {
+            try {
+                WebElement card = companionCards.get(i);
+                String cardName = card.findElement(By.xpath(".//h3")).getText().trim();
+
+                log.info("Checking card: " + cardName + " against search: " + searchName);
+
+                if (cardName.toLowerCase().contains(searchName.toLowerCase())) {
+                    log.info("Found matching card: " + cardName + " at index: " + i);
+
+                    // Scroll into view
+                    ((JavascriptExecutor) driver).executeScript("arguments[0].scrollIntoView(true);", card);
+                    CommonUtilities.threadSleep(500);
+
+                    // Click book button
+                    try {
+                        WebElement bookButton = card.findElement(
+                                By.xpath(".//button[contains(normalize-space(.),'Book your session') or contains(normalize-space(.),'Book session')]")
+                        );
+                        bookButton.click();
+                        log.info("Successfully clicked book button for: " + cardName);
+                        return true;
+                    } catch (NoSuchElementException e) {
+                        // Fallback: JS click
+                        ((JavascriptExecutor) driver).executeScript("arguments[0].click();", card);
+                        log.info("Used JS click for: " + cardName);
+                        return true;
+                    }
+                }
+            } catch (Exception e) {
+                log.error("Error processing card at index " + i + ": " + e.getMessage());
+                continue;
+            }
+        }
+
+        log.error("No companion card found with name containing: " + searchName);
+        return false;
     }
 
 }
